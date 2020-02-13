@@ -816,6 +816,8 @@ _set_flags (struct data_ctx * ctx,
     }
 }
 
+#include <time.h>
+
 static GstFlowReturn
 gst_gpu_analysis_transform_ip (GstBaseTransform * trans,
                                GstBuffer * buf)
@@ -826,6 +828,8 @@ gst_gpu_analysis_transform_ip (GstBaseTransform * trans,
   int              height = gpu_analysis->in_info.height;
   int              width  = gpu_analysis->in_info.width;
   double           values [PARAM_NUMBER] = { 0 };
+  clock_t          start, end;
+  double           cpu_time_used;
 
   if (G_UNLIKELY(!gst_pad_is_linked (GST_BASE_TRANSFORM_SRC_PAD(trans))))
     return GST_FLOW_OK;
@@ -850,6 +854,8 @@ gst_gpu_analysis_transform_ip (GstBaseTransform * trans,
       goto unmap_error;
     }
 
+  start = clock ();
+  
   /* Frame is fine, so inform the timeout_loop task */
   atomic_store(&gpu_analysis->got_frame, TRUE);
 
@@ -871,6 +877,17 @@ gst_gpu_analysis_transform_ip (GstBaseTransform * trans,
   values[DIFF] = values[DIFF] / (width * height);
   values[BLACK] = 100.0 * values[BLACK] / (width * height);
   values[BLOCKY] = 100.0 * values[BLOCKY] / (width * height / 64);
+
+  end = clock ();
+  cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+  GstStructure * s = gst_structure_new_empty ("perf");
+  gst_structure_set (s,
+                     "time", G_TYPE_DOUBLE, cpu_time_used,
+                     NULL);
+  /* Post element message containing the performance data */
+  gst_element_post_message (GST_ELEMENT (trans),
+                            gst_message_new_element (GST_OBJECT (trans), s));
 
   //g_print ("Shader Results: [block: %f; luma: %f; black: %f; diff: %f; freeze: %f]\n",
   //          values[BLOCKY], values[LUMA], values[BLACK], values[DIFF], values[FREEZE]);
