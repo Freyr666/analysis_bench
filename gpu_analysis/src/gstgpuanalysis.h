@@ -2,8 +2,8 @@
  * TODO copyright
  */
 
-#ifndef _GSTVIDEOANALYSIS_
-#define _GSTVIDEOANALYSIS_
+#ifndef _GSTGPUANALYSIS_
+#define _GSTGPUANALYSIS_
 
 #include <gst/gl/gl.h>
 #include <gst/gl/gstglbasefilter.h>
@@ -17,28 +17,28 @@
 G_BEGIN_DECLS
 
 GType gst_gpu_analysis_get_type (void);
-#define GST_TYPE_VIDEOANALYSIS                  \
+#define GST_TYPE_GPUANALYSIS                  \
   (gst_gpu_analysis_get_type())
-#define GST_VIDEOANALYSIS(obj)                                          \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_VIDEOANALYSIS,GstVideoAnalysis))
-#define GST_VIDEOANALYSIS_CLASS(klass)                                  \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_VIDEOANALYSIS,GstVideoAnalysisClass))
-#define GST_IS_VIDEOANALYSIS(obj)                               \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_VIDEOANALYSIS))
-#define GST_IS_VIDEOANALYSIS_CLASS(obj)                         \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_VIDEOANALYSIS))
-#define GST_VIDEOANALYSIS_GET_CLASS(obj)                                \
-  (G_TYPE_INSTANCE_GET_CLASS((obj) ,GST_TYPE_VIDEOANALYSIS,GstVideoAnalysisClass))
+#define GST_GPUANALYSIS(obj)                                          \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_GPUANALYSIS,GstGPUAnalysis))
+#define GST_GPUANALYSIS_CLASS(klass)                                  \
+  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_GPUANALYSIS,GstGPUAnalysisClass))
+#define GST_IS_GPUANALYSIS(obj)                               \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_GPUANALYSIS))
+#define GST_IS_GPUANALYSIS_CLASS(obj)                         \
+  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_GPUANALYSIS))
+#define GST_GPUANALYSIS_GET_CLASS(obj)                                \
+  (G_TYPE_INSTANCE_GET_CLASS((obj) ,GST_TYPE_GPUANALYSIS,GstGPUAnalysisClass))
 
-typedef struct _GstVideoAnalysis GstVideoAnalysis;
-typedef struct _GstVideoAnalysisClass GstVideoAnalysisClass;
+typedef struct _GstGPUAnalysis GstGPUAnalysis;
+typedef struct _GstGPUAnalysisClass GstGPUAnalysisClass;
 
 struct state {
   gfloat        cont_err_duration [PARAM_NUMBER];
   gint64        cont_err_past_timestamp [PARAM_NUMBER];
 };
 
-struct _GstVideoAnalysis
+struct _GstGPUAnalysis
 {
   GstGLBaseFilter    parent;
 
@@ -90,7 +90,7 @@ struct _GstVideoAnalysis
   struct boundary    params_boundary [PARAM_NUMBER];
 };
 
-struct _GstVideoAnalysisClass
+struct _GstGPUAnalysisClass
 {
   GstGLBaseFilterClass parent_class;
 
@@ -120,4 +120,4 @@ get_timestamp(struct state * state, PARAMETER param)
 
 G_END_DECLS
 
-#endif /* _GSTVIDEOANALYSIS_ */
+#endif /* _GSTGPUANALYSIS_ */

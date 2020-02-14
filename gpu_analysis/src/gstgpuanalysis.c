@@ -76,9 +76,9 @@ static gboolean gst_gpu_analysis_set_caps (GstBaseTransform * trans,
 static GstFlowReturn gst_gpu_analysis_transform_ip (GstBaseTransform * filter,
                                                     GstBuffer * inbuf);
 
-static gboolean gpu_analysis_apply (GstVideoAnalysis * va, GstGLMemory * mem);
+static gboolean gpu_analysis_apply (GstGPUAnalysis * va, GstGLMemory * mem);
 
-static void gst_gpu_analysis_timeout_loop (GstVideoAnalysis * va);
+static void gst_gpu_analysis_timeout_loop (GstGPUAnalysis * va);
 
 //static gboolean gst_gl_base_filter_find_gl_context (GstGLBaseFilter * filter);
 
@@ -136,7 +136,7 @@ static const gchar caps_string[] =
   "video/x-raw(memory:GLMemory),format=(string){I420,NV12,NV21,YV12}";
 
 /* class initialization */
-G_DEFINE_TYPE_WITH_CODE (GstVideoAnalysis,
+G_DEFINE_TYPE_WITH_CODE (GstGPUAnalysis,
                          gst_gpu_analysis,
                          GST_TYPE_GL_BASE_FILTER,
                          GST_DEBUG_CATEGORY_INIT (gst_gpu_analysis_debug_category,
@@ -144,7 +144,7 @@ G_DEFINE_TYPE_WITH_CODE (GstVideoAnalysis,
                                                   "debug category for gpu_analysis element"));
 
 static void
-gst_gpu_analysis_class_init (GstVideoAnalysisClass * klass)
+gst_gpu_analysis_class_init (GstGPUAnalysisClass * klass)
 {
   GObjectClass *gobject_class = (GObjectClass *) klass;
   GstElementClass *element_class = GST_ELEMENT_CLASS(klass);
@@ -184,16 +184,16 @@ gst_gpu_analysis_class_init (GstVideoAnalysisClass * klass)
 
   signals[DATA_SIGNAL] =
     g_signal_new("data", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(GstVideoAnalysisClass, data_signal), NULL, NULL,
+                 G_STRUCT_OFFSET(GstGPUAnalysisClass, data_signal), NULL, NULL,
                  g_cclosure_marshal_generic, G_TYPE_NONE,
                  1, GST_TYPE_BUFFER);
   signals[STREAM_LOST_SIGNAL] =
     g_signal_new("stream-lost", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(GstVideoAnalysisClass, stream_lost_signal), NULL, NULL,
+                 G_STRUCT_OFFSET(GstGPUAnalysisClass, stream_lost_signal), NULL, NULL,
                  g_cclosure_marshal_generic, G_TYPE_NONE, 0);
   signals[STREAM_FOUND_SIGNAL] =
     g_signal_new("stream-found", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_LAST,
-                 G_STRUCT_OFFSET(GstVideoAnalysisClass, stream_found_signal), NULL, NULL,
+                 G_STRUCT_OFFSET(GstGPUAnalysisClass, stream_found_signal), NULL, NULL,
                  g_cclosure_marshal_generic, G_TYPE_NONE, 0);
 
   properties [PROP_TIMEOUT] =
@@ -311,7 +311,7 @@ gst_gpu_analysis_class_init (GstVideoAnalysisClass * klass)
 }
 
 static void
-gst_gpu_analysis_init (GstVideoAnalysis *gpu_analysis)
+gst_gpu_analysis_init (GstGPUAnalysis *gpu_analysis)
 {
   gpu_analysis->timeout = 10;
   gpu_analysis->period  = 1;
@@ -376,7 +376,7 @@ static void
 gst_gpu_analysis_finalize(GObject *object)
 {
   GstGLContext *context = GST_GL_BASE_FILTER (object)->context;
-  GstVideoAnalysis *gpu_analysis = GST_VIDEOANALYSIS (object);
+  GstGPUAnalysis *gpu_analysis = GST_GPUANALYSIS (object);
   
   if (context)
     gst_object_unref(context);
@@ -396,7 +396,7 @@ gst_gpu_analysis_set_property (GObject * object,
                                const GValue * value,
                                GParamSpec * pspec)
 {
-  GstVideoAnalysis *gpu_analysis = GST_VIDEOANALYSIS (object);
+  GstGPUAnalysis *gpu_analysis = GST_GPUANALYSIS (object);
 
   GST_DEBUG_OBJECT (gpu_analysis, "set_property");
 
@@ -503,7 +503,7 @@ gst_gpu_analysis_get_property (GObject * object,
                                GValue * value,
                                GParamSpec * pspec)
 {
-  GstVideoAnalysis *gpu_analysis = GST_VIDEOANALYSIS (object);
+  GstGPUAnalysis *gpu_analysis = GST_GPUANALYSIS (object);
 
   GST_DEBUG_OBJECT (gpu_analysis, "get_property");
 
@@ -608,7 +608,7 @@ static GstStateChangeReturn
 gst_gpu_analysis_change_state (GstElement * element,
                                GstStateChange transition)
 {
-  GstVideoAnalysis *gpu_analysis = GST_VIDEOANALYSIS (element);
+  GstGPUAnalysis *gpu_analysis = GST_GPUANALYSIS (element);
 
   switch (transition) {
     /* Initialize task and clocks */
@@ -659,7 +659,7 @@ _find_local_gl_context (GstGLBaseFilter * filter)
 }
 
 static void
-shader_create (GstGLContext * context, GstVideoAnalysis * va)
+shader_create (GstGLContext * context, GstGPUAnalysis * va)
 {
   GError * error;
   if (!(va->shader =
@@ -712,7 +712,7 @@ gst_gpu_analysis_set_caps (GstBaseTransform * trans,
                            GstCaps * incaps,
                            GstCaps * outcaps)
 {
-  GstVideoAnalysis *gpu_analysis = GST_VIDEOANALYSIS (trans);
+  GstGPUAnalysis *gpu_analysis = GST_GPUANALYSIS (trans);
   
   if (!gst_video_info_from_caps (&gpu_analysis->in_info, incaps))
     goto wrong_caps;
@@ -824,7 +824,7 @@ gst_gpu_analysis_transform_ip (GstBaseTransform * trans,
 {
   GstMemory        *tex;
   GstVideoFrame    gl_frame;
-  GstVideoAnalysis *gpu_analysis = GST_VIDEOANALYSIS (trans);
+  GstGPUAnalysis *gpu_analysis = GST_GPUANALYSIS (trans);
   int              height = gpu_analysis->in_info.height;
   int              width  = gpu_analysis->in_info.width;
   double           values [PARAM_NUMBER] = { 0 };
@@ -950,7 +950,7 @@ gst_gpu_analysis_transform_ip (GstBaseTransform * trans,
 }
 
 static void
-analyse (GstGLContext *context, GstVideoAnalysis * va)
+analyse (GstGLContext *context, GstGPUAnalysis * va)
 {
   const GstGLFuncs * gl = context->gl_vtable;
   int width = va->in_info.width;
@@ -1025,7 +1025,7 @@ analyse (GstGLContext *context, GstVideoAnalysis * va)
 }
 
 static void
-_check_defaults_ (GstGLContext *context, GstVideoAnalysis * va) {
+_check_defaults_ (GstGLContext *context, GstGPUAnalysis * va) {
   int size, type;
         
   glGetInternalformativ(GL_TEXTURE_2D, GL_RED, GL_INTERNALFORMAT_RED_SIZE, 1, &size);
@@ -1043,7 +1043,7 @@ _check_defaults_ (GstGLContext *context, GstVideoAnalysis * va) {
 }
 
 static gboolean
-gpu_analysis_apply (GstVideoAnalysis * va, GstGLMemory * tex)
+gpu_analysis_apply (GstGPUAnalysis * va, GstGLMemory * tex)
 {
   GstGLContext *context = GST_GL_BASE_FILTER (va)->context;
 
@@ -1078,7 +1078,7 @@ gpu_analysis_apply (GstVideoAnalysis * va, GstGLMemory * tex)
 }
 
 static void
-gst_gpu_analysis_timeout_loop (GstVideoAnalysis * gpu_analysis)
+gst_gpu_analysis_timeout_loop (GstGPUAnalysis * gpu_analysis)
 {
   gint countdown = gpu_analysis->timeout;
   static gboolean stream_is_lost = FALSE; /* TODO maybe this should be true */
@@ -1121,7 +1121,7 @@ plugin_init (GstPlugin * plugin)
   return gst_element_register (plugin,
                                "gpuanalysis",
                                GST_RANK_NONE,
-                               GST_TYPE_VIDEOANALYSIS);
+                               GST_TYPE_GPUANALYSIS);
 }
 
 /* FIXME: these are normally defined by the GStreamer build system.
