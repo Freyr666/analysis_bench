@@ -41,6 +41,7 @@ class Bench:
     def __stop (self, _none):
         self._pipe.set_state(Gst.State.NULL)
         self._loop.quit()
+        self._pipe.unref()
 
     def __on_msg (self, _bus, msg, _data):
         if msg.has_name("perf"):
@@ -79,7 +80,7 @@ def main(args):
     print ("Result is: {}".format(b1.result()))
     b2 = Bench(kind = Bench.GPU, duration = 3)
     print ("Result is: {}".format(b2.result()))
-    b3 = Bench(kind = Bench.GPU, duration = 3)
+    b3 = Bench(kind = Bench.GPU, duration = 30)
     print ("Result is: {}".format(b3.result()))
 
 if __name__ == "__main__":

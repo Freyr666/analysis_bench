@@ -64,7 +64,9 @@ static void gst_gpu_analysis_get_property (GObject * object,
                                            GValue * value,
                                            GParamSpec * pspec);
 
-static void gst_gpu_analysis_finalize (GObject *object);
+//static void gst_gpu_analysis_finalize(GObject *object);
+
+static void gst_gpu_analysis_dispose (GObject *object);
 
 static GstStateChangeReturn gst_gpu_analysis_change_state (GstElement * element,
                                                            GstStateChange transition);
@@ -78,7 +80,7 @@ static GstFlowReturn gst_gpu_analysis_transform_ip (GstBaseTransform * filter,
 
 static gboolean gpu_analysis_apply (GstGPUAnalysis * va, GstGLMemory * mem);
 
-static void gst_gpu_analysis_timeout_loop (GstGPUAnalysis * va);
+//static void gst_gpu_analysis_timeout_loop (GstGPUAnalysis * va);
 
 //static gboolean gst_gl_base_filter_find_gl_context (GstGLBaseFilter * filter);
 
@@ -172,8 +174,8 @@ gst_gpu_analysis_class_init (GstGPUAnalysisClass * klass)
 
   gobject_class->set_property = gst_gpu_analysis_set_property;
   gobject_class->get_property = gst_gpu_analysis_get_property;
-  gobject_class->finalize     = gst_gpu_analysis_finalize;
-
+  //gobject_class->finalize     = gst_gpu_analysis_finalize;
+  gobject_class->dispose      = gst_gpu_analysis_dispose;
   element_class->change_state = gst_gpu_analysis_change_state;
   
   base_transform_class->passthrough_on_same_caps = FALSE;
@@ -363,31 +365,35 @@ gst_gpu_analysis_init (GstGPUAnalysis *gpu_analysis)
   }
 
   data_ctx_init (&gpu_analysis->errors);
-
-  g_rec_mutex_init (&gpu_analysis->task_lock);
-  gpu_analysis->timeout_task =
-    gst_task_new ((GstTaskFunction)gst_gpu_analysis_timeout_loop,
-                  gpu_analysis,
-                  NULL);
-  gst_task_set_lock (gpu_analysis->timeout_task, &gpu_analysis->task_lock);
+  /*
+    g_rec_mutex_init (&gpu_analysis->task_lock);
+    gpu_analysis->timeout_task =
+      gst_task_new ((GstTaskFunction)gst_gpu_analysis_timeout_loop,
+                    gpu_analysis,
+                    NULL);
+    gst_task_set_lock (gpu_analysis->timeout_task, &gpu_analysis->task_lock);
+  */  
 }
 
 static void
-gst_gpu_analysis_finalize(GObject *object)
+gst_gpu_analysis_dispose (GObject *object)  
+//gst_gpu_analysis_finalize(GObject *object)
 {
   GstGLContext *context = GST_GL_BASE_FILTER (object)->context;
   GstGPUAnalysis *gpu_analysis = GST_GPUANALYSIS (object);
-  
+  //printf ("GPU dispose 1\n");
   if (context)
     gst_object_unref(context);
-
+  //printf ("GPU dispose 2\n");
   data_ctx_delete (&gpu_analysis->errors);
-
-  gst_object_unref (gpu_analysis->timeout_task);
+  //printf ("GPU dispose 3\n");
+  //gst_object_unref (gpu_analysis->timeout_task);
   gst_object_unref (gpu_analysis->shader);
   gst_object_unref (gpu_analysis->shader_block);
-  
-  G_OBJECT_CLASS (parent_class)->finalize(object);
+  //printf ("GPU dispose 4\n");
+  //G_OBJECT_CLASS (parent_class)->finalize(object);
+  G_OBJECT_CLASS (parent_class)->dispose(object);
+  //printf ("GPU dispose 5\n");
 }
 
 static void
@@ -620,10 +626,12 @@ gst_gpu_analysis_change_state (GstElement * element,
         gpu_analysis->error_state.cont_err_duration[i] = 0.;
       
       gpu_analysis->next_data_message_ts = 0;
+      /*
       atomic_store(&gpu_analysis->got_frame, FALSE);
       atomic_store(&gpu_analysis->task_should_run, TRUE);
 
       gst_task_start (gpu_analysis->timeout_task);
+      */
     }
     break;
   case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
@@ -631,10 +639,11 @@ gst_gpu_analysis_change_state (GstElement * element,
       gpu_analysis->tex = NULL;
       gst_buffer_replace(&gpu_analysis->prev_buffer, NULL);
       gpu_analysis->prev_tex = NULL;
-      
+      /*
       atomic_store(&gpu_analysis->task_should_run, FALSE);
-      
+
       gst_task_join (gpu_analysis->timeout_task);
+      */
     }
     break;
   default:
@@ -1077,15 +1086,16 @@ gpu_analysis_apply (GstGPUAnalysis * va, GstGLMemory * tex)
   return TRUE;
 }
 
+/*
 static void
 gst_gpu_analysis_timeout_loop (GstGPUAnalysis * gpu_analysis)
 {
   gint countdown = gpu_analysis->timeout;
-  static gboolean stream_is_lost = FALSE; /* TODO maybe this should be true */
+  static gboolean stream_is_lost = FALSE; / TODO maybe this should be true /
   
   while (countdown--)
     {
-      /* In case we need kill the task */
+      / In case we need kill the task /
       if (G_UNLIKELY (! atomic_load (&gpu_analysis->task_should_run)))
         return;
 
@@ -1104,13 +1114,14 @@ gst_gpu_analysis_timeout_loop (GstGPUAnalysis * gpu_analysis)
       sleep (1);
     }
 
-  /* No frame appeared before countdown exp */
+  / No frame appeared before countdown exp /
   if ( !stream_is_lost )
     {
       stream_is_lost = TRUE;
       g_signal_emit(gpu_analysis, signals[STREAM_LOST_SIGNAL], 0);
     }
-}
+    }
+*/    
    
 static gboolean
 plugin_init (GstPlugin * plugin)
