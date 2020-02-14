@@ -37,6 +37,7 @@ class Bench:
     def __gpu_pipe (self, size):
         return Gst.parse_launch("gltestsrc is-live=true ! glcolorconvert ! video/x-raw(ANY),height=720,width=1280 ! gpuanalysis ! glimagesink")
 
+
     def __stop (self, _none):
         self._pipe.set_state(Gst.State.NULL)
         self._pipe.get_bus().remove_watch()
