@@ -6,6 +6,12 @@ import matplotlib.pyplot as plt
 import math
 
 
+#cpu_name = "i7-7700K CPU @ 4.20GHz"
+#gpu_name = "AMD Vega 56"
+cpu_name = "i3-7100U CPU @ 2.40GHz"
+gpu_name = "Intel HD Graphics 620"
+
+
 def read_array(path):
     file = open(path, 'r')
     lines = file.readlines()
@@ -20,7 +26,7 @@ def round_up(n, decimals=0):
     return math.ceil(n * multiplier) / multiplier
 
 
-def plot_hist(size, cpu, gpu):
+def plot_hist(prefix, size, cpu, gpu):
     cpu_array = read_array(cpu)
     gpu_array = read_array(gpu)
 
@@ -31,8 +37,8 @@ def plot_hist(size, cpu, gpu):
 
     lim = round_up(math.sqrt(size) / 20, 2)
     bins = np.linspace(0, lim, 100)
-    cpu_label = "CPU ({})".format("i7-7700K CPU @ 4.20GHz")
-    gpu_label = "GPU ({})".format("AMD Vega 56")
+    cpu_label = "CPU ({})".format(cpu_name)
+    gpu_label = "GPU ({})".format(gpu_name)
     plt.hist(x=cpu_array, bins=bins,
              color='blue', label=cpu_label,
              alpha=0.5, rwidth=0.85)
@@ -49,8 +55,8 @@ def plot_hist(size, cpu, gpu):
     #maxfreq = n.max()
     # Set a clean upper y-axis limit.
     #plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
-    plt.savefig('plots/{}.svg'.format(size))
+    plt.savefig('{}/plots/{}.png'.format(prefix, size))
 
 
 if __name__ == "__main__":
-    plot_hist(int(sys.argv[1]), sys.argv[2], sys.argv[3])
+    plot_hist(sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4])
