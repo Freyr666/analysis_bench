@@ -673,7 +673,7 @@ gst_cpu_analysis_transform_frame_ip (GstVideoFilter * filter,
                      NULL);
   /* Post element message containing the performance data */
   gst_element_post_message (GST_ELEMENT (filter),
-                            gst_message_new_element (GST_OBJECT (filter), s));
+                            gst_message_new_application (GST_OBJECT (filter), s));
                                                            
         
   params.time = tm;

@@ -896,7 +896,7 @@ gst_gpu_analysis_transform_ip (GstBaseTransform * trans,
                      NULL);
   /* Post element message containing the performance data */
   gst_element_post_message (GST_ELEMENT (trans),
-                            gst_message_new_element (GST_OBJECT (trans), s));
+                            gst_message_new_application (GST_OBJECT (trans), s));
 
   //g_print ("Shader Results: [block: %f; luma: %f; black: %f; diff: %f; freeze: %f]\n",
   //          values[BLOCKY], values[LUMA], values[BLACK], values[DIFF], values[FREEZE]);
