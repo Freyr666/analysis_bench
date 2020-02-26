@@ -33,7 +33,7 @@ def plot_degrad(prefix, begin, end):
     else:
         title = "GPU ({})".format("AMD Vega 56")
 
-    plt.xlabel('Количество потоков')
+    plt.xlabel('Количество программ')
     plt.ylabel('Время вычисления, секунд')
     plt.title(title)
     plt.errorbar(x, np.array(mean), yerr=np.array(std), fmt='-o')

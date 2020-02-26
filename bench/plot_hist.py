@@ -25,9 +25,9 @@ def plot_hist(size, cpu, gpu):
     gpu_array = read_array(gpu)
 
     if size == 1:
-        title = "1 поток"
+        title = "1 программа"
     else:
-        title = str(size) + " потоков"
+        title = str(size) + " программ"
 
     lim = round_up(math.sqrt(size) / 20, 2)
     bins = np.linspace(0, lim, 100)
