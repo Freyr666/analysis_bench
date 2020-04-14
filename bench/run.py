@@ -29,6 +29,7 @@ class Bench:
 
     _loop = None
     _pipe = None
+    _times = []
 
     CPU = _BenchKind(0)
     GPU = _BenchKind(1)
@@ -49,13 +50,13 @@ class Bench:
     def __stop(self, _none):
         self._pipe.set_state(Gst.State.NULL)
         self._loop.quit()
-        self._pipe.unref()
+        #self._pipe.unref()
 
     def __on_msg(self, _bus, msg, _data):
         if msg.type == Gst.MessageType.APPLICATION and msg.has_name("perf"):
             data = msg.get_structure().get_double("time")
             if data:
-                print(data[1])
+                self._times.append(data[1])
         return True
 
     def __init__(self, kind=CPU, size=1, duration=20):
@@ -78,14 +79,26 @@ class Bench:
         self._pipe.set_state(Gst.State.PLAYING)
         self._loop.run()
 
+    def print_results(self):
+        avg = sum(self._times)/len(self._times)
+        print("Avg frame time is {}".format(avg))
+
 
 def main(args):
-    if args[1] == 'cpu':
-        kind = Bench.CPU
-    else:
-        kind = Bench.GPU
-    sz = int(args[2])
-    Bench(kind=kind, size=sz, duration=30)
+#    if args[1] == 'cpu':
+#        kind = Bench.CPU
+#    else:
+#        kind = Bench.GPU
+#    sz = int(args[2])
+#    Bench(kind=kind, size=sz, duration=30)
+    b1 = Bench(kind = Bench.CPU, size = 5, duration = 5)
+    b1.print_results()
+    b2 = Bench(kind = Bench.GPU, size = 5, duration = 5)
+    b2.print_results()
+    b3 = Bench(kind = Bench.CPU, size = 10, duration = 5)
+    b3.print_results()
+    b4 = Bench(kind = Bench.GPU, size = 10, duration = 5)
+    b4.print_results()
 
 
 if __name__ == "__main__":

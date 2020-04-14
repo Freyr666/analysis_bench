@@ -8,14 +8,14 @@ LDFLAGS += `pkg-config --libs gstreamer-1.0 gstreamer-video-1.0 gstreamer-gl-1.0
 
 PY=python3
 
-all: error.o gpuanalysis.o
-	@$(CC) $(LDFLAGS) error.o gpuanalysis.o -o ../../build/libgpuanalysis.so
+all: gstatsanalysis.o gpuanalysis.o
+	@$(CC) $(LDFLAGS) gstatsanalysis.o gpuanalysis.o -o ../../build/libgpuanalysis.so
 
-error.o:
-	@$(CC) $(CFLAGS) error.c -o error.o
+gstatsanalysis.o:
+	@$(CC) $(CFLAGS) gstatsanalysis.c -o gstatsanalysis.o
 
-gpuanalysis.o: analysis.h
-	@$(CC) $(CFLAGS) gstgpuanalysis.c -o gpuanalysis.o
+gpuanalysis.o: common.h
+	@$(CC) $(CFLAGS) gstvideoanalysis.c -o gpuanalysis.o
 
 clean:
 	rm *.o
