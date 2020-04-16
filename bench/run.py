@@ -20,19 +20,25 @@ class Bench:
         def is_gpu(self):
             return self._type == 0
 
-        def is_gpu_no_copy(self):
+        def is_gpu_decode(self):
             return self._type == 1
+
+        def is_gpu_no_copy(self):
+            return self._type == 2
 
         def __str__(self):
             if self._type == 0:
                 return "Upload"
+            elif self._type == 1:
+                return "Upload + decode"
             else:
                 return "No texture upload"
 
     FPS = 25
 
     Upload = _BenchKind(0)
-    NoUpload = _BenchKind(1)
+    UploadDec = _BenchKind(1)
+    NoUpload = _BenchKind(2)
             
     _loop = None
     _pipe = None
@@ -41,15 +47,21 @@ class Bench:
     _duration = 0
     _fps = []
 
+    def __gpu_pipe_decode(self, size):
+        source = "videotestsrc is-live=true ! video/x-raw,height=720,width=1280,framerate=25/1 ! x264enc ! queue ! tee name=t"
+        first = " ! queue ! avdec_h264 ! glupload ! glcolorconvert ! gleffects_fisheye ! fpsdisplaysink name=rate video-sink=fakesink signal-fps-measurements=true"
+        analysis = " t. ! queue ! avdec_h264 ! glupload ! glcolorconvert ! gleffects_fisheye ! fakesink" * (size - 1)
+        return Gst.parse_launch(source + first + analysis)
+
     def __gpu_pipe(self, size):
         source = "videotestsrc is-live=true ! video/x-raw,height=720,width=1280,framerate=25/1 ! queue ! tee name=t"
-        first = " ! queue ! glupload ! gleffects_fisheye ! fpsdisplaysink name=rate video-sink=glimagesink signal-fps-measurements=true"
+        first = " ! queue ! glupload ! gleffects_fisheye ! fpsdisplaysink name=rate video-sink=fakesink signal-fps-measurements=true"
         analysis = " t. ! queue ! glupload ! gleffects_fisheye ! fakesink" * (size - 1)
         return Gst.parse_launch(source + first + analysis)
 
     def __gpu_no_copy_pipe(self, size):
         source = "videotestsrc is-live=true ! video/x-raw,height=720,width=1280,framerate=25/1 ! queue ! glupload ! tee name=t"
-        first = " ! queue ! gleffects_fisheye ! fpsdisplaysink name=rate video-sink=glimagesink signal-fps-measurements=true"
+        first = " ! queue ! gleffects_fisheye ! fpsdisplaysink name=rate video-sink=fakesink signal-fps-measurements=true"
         analysis = " t. ! queue ! gleffects_fisheye ! fakesink" * (size - 1)
         return Gst.parse_launch(source + first + analysis)
 
@@ -71,6 +83,8 @@ class Bench:
         print("Creating a benchmark for {} of size {}".format(kind, size))
         if kind.is_gpu():
             self._pipe = self.__gpu_pipe(size)
+        elif kind.is_gpu_decode():
+            self._pipe = self.__gpu_pipe_decode(size)
         elif kind.is_gpu_no_copy():
             self._pipe = self.__gpu_no_copy_pipe(size)
         else:
@@ -112,21 +126,27 @@ def print_results(bench):
                   bench.framerate()))
     
 def main(args):
-    interval = [x for x in range(1,80) if x % 5 == 0 or x == 1]
+    interval = [x for x in range(1,40) if x % 5 == 0 or x == 1]
     copy = []
+    copy_dec = []
     no_copy = []
     
     for size in interval:
         c = Bench(kind=Bench.Upload, size=size)
+        cd = Bench(kind=Bench.UploadDec, size=size)
         nc = Bench(kind=Bench.NoUpload, size=size)
         copy.append(c.framerate())
+        copy_dec.append(cd.framerate())
         no_copy.append(nc.framerate())
         print_results(c)
+        print_results(cd)
         print_results(nc)
 
     x = np.array(interval)
     copy_mean = np.array(list(map(lambda x: x[0], copy)))
     copy_std = np.array(list(map(lambda x: x[1], copy)))
+    copy_dec_mean = np.array(list(map(lambda x: x[0], copy_dec)))
+    copy_dec_std = np.array(list(map(lambda x: x[1], copy_dec)))
     no_copy_mean = np.array(list(map(lambda x: x[0], no_copy)))
     no_copy_std = np.array(list(map(lambda x: x[1], no_copy)))
 
@@ -135,6 +155,7 @@ def main(args):
     plt.ylabel('Средняя частота кадров, кадров в секунду')
     plt.title('Деградация производительности')
     plt.errorbar(x, copy_mean, yerr=copy_std, fmt='-o', label='Copy', color='blue', ecolor='blue')
+    plt.errorbar(x, copy_dec_mean, yerr=copy_dec_std, fmt='-o', label='Copy + decode', color='blue', ecolor='green')
     plt.errorbar(x, no_copy_mean, yerr=no_copy_std, fmt='-o', label='No Copy', color='red', ecolor='red')
     plt.legend(loc='lower right')
     plt.show()
